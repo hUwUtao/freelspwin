@@ -1,9 +1,17 @@
 #ifndef AppVersion
-  #define AppVersion "1.2.35"
+  #if GetEnv("LSP_VERSION") != ""
+    #define AppVersion GetEnv("LSP_VERSION")
+  #else
+    #define AppVersion "1.2.35"
+  #endif
 #endif
 
 #ifndef PayloadDir
-  #define PayloadDir "..\INSTALL"
+  #if GetEnv("LSP_INSTALL_DIR") != ""
+    #define PayloadDir GetEnv("LSP_INSTALL_DIR")
+  #else
+    #define PayloadDir "..\INSTALL"
+  #endif
 #endif
 
 [Setup]
@@ -29,6 +37,9 @@ WizardStyle=modern
 Name: "typical"; Description: "Typical installation"
 Name: "full"; Description: "All plugin formats"; Flags: isfull
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Components]
 Name: "clap"; Description: "CLAP"; Types: typical full custom
