@@ -22,7 +22,6 @@ AppPublisher=lab-o-ratory
 AppPublisherURL=https://lsp-plug.in/
 DefaultDirName={autopf}\LSP Plugins
 DefaultGroupName=LSP Plugins
-DefaultTypeName=typical
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
