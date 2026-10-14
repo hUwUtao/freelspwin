@@ -36,6 +36,7 @@ jobs:
           install: >-
             git
             make
+            ccache
             ${{ inputs.toolchain == 'gcc' && 'mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-binutils' || 'mingw-w64-clang-x86_64-toolchain' }}
 
       - name: Download source release
@@ -50,17 +51,38 @@ jobs:
           $sourceDir = [IO.Path]::GetRelativePath($env:GITHUB_WORKSPACE, $makefile.DirectoryName).Replace('\', '/')
           "LSP_SOURCE_DIR=$sourceDir" >> $env:GITHUB_ENV
 
+      - name: Restore ccache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-
+
       - name: Configure, build, and install
         shell: msys2 {0}
         env:
-          CC: ${{ inputs.toolchain == 'gcc' && 'gcc' || 'clang' }}
-          CXX: ${{ inputs.toolchain == 'gcc' && 'g++' || 'clang++' }}
+          CC: ${{ inputs.toolchain == 'gcc' && 'ccache gcc' || 'ccache clang' }}
+          CXX: ${{ inputs.toolchain == 'gcc' && 'ccache g++' || 'ccache clang++' }}
         run: |
+          export CCACHE_DIR="$(cygpath -u "$GITHUB_WORKSPACE")/.ccache"
+          export CCACHE_BASEDIR="$(cygpath -u "$GITHUB_WORKSPACE")"
+          export CCACHE_COMPILERCHECK=content
+          export CCACHE_MAXSIZE=3G
           cd "$LSP_SOURCE_DIR"
           make clean
           make config FEATURES="clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX"
           make -j"$(nproc)" CC="$CC" CXX="$CXX"
           make install
+          ccache --show-stats
+
+      - name: Save ccache
+        if: always() && steps.ccache.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload Windows plugin bundle
         uses: actions/upload-artifact@v4
