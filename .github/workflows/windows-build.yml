@@ -20,7 +20,7 @@ on:
         default: clang
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -94,6 +94,51 @@ jobs:
         with:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ steps.source.outputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if (-not $iscc) {
+            $candidatePaths = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+            )
+            $isccPath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if ($isccPath) { $iscc = Get-Item $isccPath }
+          }
+          if (-not $iscc) {
+            choco install innosetup --yes --no-progress
+            $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+            if (-not $iscc) {
+              $isccPath = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+              if ($isccPath) { $iscc = Get-Item $isccPath }
+            }
+          }
+          if (-not $iscc) { throw 'Inno Setup compiler (ISCC.exe) is not available.' }
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\dist" | Out-Null
+          $payload = Join-Path $env:GITHUB_WORKSPACE "$env:LSP_SOURCE_DIR\INSTALL"
+          $isccExe = if ($iscc.Source) { $iscc.Source } else { $iscc.FullName }
+          & $isccExe "/DAppVersion=$env:LSP_VERSION" "/DPayloadDir=$payload" "/O$env:GITHUB_WORKSPACE\dist" "installer\lsp-plugins.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: lsp-plugins-windows-installer-${{ steps.source.outputs.version }}-${{ env.TOOLCHAIN }}
+          path: dist/*.exe
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Attach installer to GitHub release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Get-ChildItem dist -Filter '*.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'No Windows installer was generated.' }
+          gh release upload "$env:GITHUB_REF_NAME" $installer.FullName --repo $env:GITHUB_REPOSITORY --clobber
 
       - name: Upload Windows plugin bundle
         uses: actions/upload-artifact@v4
