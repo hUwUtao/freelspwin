@@ -1,0 +1,60 @@
+name: Build LSP Plugins for Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: LSP Plugins source release version
+        required: true
+        default: 1.2.35
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    env:
+      LSP_VERSION: ${{ inputs.version || '1.2.35' }}
+
+    steps:
+      - name: Install MinGW-w64, GNU Make, and PHP
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-binutils
+            php
+
+      - name: Download source release
+        shell: pwsh
+        run: |
+          $archive = "lsp-plugins-src-$env:LSP_VERSION.tar.gz"
+          $url = "https://github.com/sadko4u/lsp-plugins/releases/download/$env:LSP_VERSION/$archive"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          tar -xzf $archive
+          "LSP_SOURCE_DIR=$((Get-ChildItem -Directory -Filter 'lsp-plugins-*' | Select-Object -First 1).Name)" >> $env:GITHUB_ENV
+
+      - name: Configure, build, and install
+        shell: msys2 {0}
+        run: |
+          cd "$LSP_SOURCE_DIR"
+          make clean
+          make config
+          make -j"$(nproc)"
+          make install
+
+      - name: Upload Windows plugin bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: lsp-plugins-windows-x86_64-${{ env.LSP_VERSION }}
+          path: ${{ env.LSP_SOURCE_DIR }}/INSTALL/
+          if-no-files-found: error
+          compression-level: 9
