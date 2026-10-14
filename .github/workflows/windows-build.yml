@@ -31,13 +31,14 @@ jobs:
       - name: Install MinGW-w64 and GNU Make
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ inputs.toolchain == 'gcc' && 'UCRT64' || 'CLANG64' }}
+          msystem: UCRT64
           update: true
           install: >-
             git
             make
             ccache
-            ${{ inputs.toolchain == 'gcc' && 'mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-binutils' || 'mingw-w64-clang-x86_64-toolchain' }}
+            ${{ inputs.toolchain == 'gcc' && 'mingw-w64-ucrt-x86_64-gcc' || 'mingw-w64-ucrt-x86_64-clang' }}
+            mingw-w64-ucrt-x86_64-binutils
 
       - name: Download source release
         shell: pwsh
