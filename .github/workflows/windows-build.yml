@@ -37,7 +37,8 @@ jobs:
             git
             make
             ccache
-            ${{ inputs.toolchain == 'gcc' && 'mingw-w64-ucrt-x86_64-gcc' || 'mingw-w64-ucrt-x86_64-clang' }}
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-clang
             mingw-w64-ucrt-x86_64-binutils
 
       - name: Download source release
@@ -66,6 +67,8 @@ jobs:
         env:
           CC: ${{ inputs.toolchain == 'gcc' && 'ccache gcc' || 'ccache clang' }}
           CXX: ${{ inputs.toolchain == 'gcc' && 'ccache g++' || 'ccache clang++' }}
+          HOST_CC: ccache gcc
+          HOST_CXX: ccache g++
         run: |
           export CCACHE_DIR="$(cygpath -u "$GITHUB_WORKSPACE")/.ccache"
           export CCACHE_BASEDIR="$(cygpath -u "$GITHUB_WORKSPACE")"
@@ -73,8 +76,8 @@ jobs:
           export CCACHE_MAXSIZE=3G
           cd "$LSP_SOURCE_DIR"
           make clean
-          make config FEATURES="clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX"
-          make -j"$(nproc)" CC="$CC" CXX="$CXX"
+          make config FEATURES="clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX" HOST_CC="$HOST_CC" HOST_CXX="$HOST_CXX"
+          make -j2 CC="$CC" CXX="$CXX" HOST_CC="$HOST_CC" HOST_CXX="$HOST_CXX"
           make install
           ccache --show-stats
 
