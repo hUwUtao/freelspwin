@@ -76,7 +76,7 @@ jobs:
           export CCACHE_MAXSIZE=3G
           cd "$LSP_SOURCE_DIR"
           make clean
-          make config FEATURES="clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX" HOST_CC="$HOST_CC" HOST_CXX="$HOST_CXX"
+          make config FEATURES="crosscompile clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX" HOST_CC="$HOST_CC" HOST_CXX="$HOST_CXX"
           make -j2 CC="$CC" CXX="$CXX" HOST_CC="$HOST_CC" HOST_CXX="$HOST_CXX"
           make install
           ccache --show-stats
