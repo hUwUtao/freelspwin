@@ -21,17 +21,16 @@ jobs:
       LSP_VERSION: ${{ inputs.version || '1.2.35' }}
 
     steps:
-      - name: Install MinGW-w64, GNU Make, and PHP
+      - name: Install MinGW-w64 and GNU Make
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
             git
             make
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-binutils
-            php
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-binutils
 
       - name: Download source release
         shell: pwsh
@@ -47,7 +46,7 @@ jobs:
         run: |
           cd "$LSP_SOURCE_DIR"
           make clean
-          make config
+          make config FEATURES="clap ladspa lv2 vst2 vst3 ui"
           make -j"$(nproc)"
           make install
 
