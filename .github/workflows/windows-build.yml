@@ -129,7 +129,7 @@ jobs:
           }
           $env:LSP_INSTALL_DIR = $payload
           $isccExe = if ($iscc.Source) { $iscc.Source } else { $iscc.FullName }
-          & $isccExe "--output-dir=$outputDir" $script
+          & $isccExe "/O$outputDir" $script
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
 
       - name: Upload Windows installer
