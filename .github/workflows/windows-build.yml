@@ -39,7 +39,10 @@ jobs:
           $url = "https://github.com/sadko4u/lsp-plugins/releases/download/$env:LSP_VERSION/$archive"
           Invoke-WebRequest -Uri $url -OutFile $archive
           tar -xzf $archive
-          "LSP_SOURCE_DIR=$((Get-ChildItem -Directory -Filter 'lsp-plugins-*' | Select-Object -First 1).Name)" >> $env:GITHUB_ENV
+          $makefile = Get-ChildItem -Recurse -Filter Makefile | Where-Object { Test-Path (Join-Path $_.DirectoryName 'project.mk') } | Select-Object -First 1
+          if (-not $makefile) { throw 'Could not find the LSP Plugins source directory (Makefile and project.mk).' }
+          $sourceDir = [IO.Path]::GetRelativePath($env:GITHUB_WORKSPACE, $makefile.DirectoryName).Replace('\', '/')
+          "LSP_SOURCE_DIR=$sourceDir" >> $env:GITHUB_ENV
 
       - name: Configure, build, and install
         shell: msys2 {0}
