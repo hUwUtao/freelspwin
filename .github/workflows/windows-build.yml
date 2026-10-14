@@ -30,6 +30,9 @@ jobs:
       TOOLCHAIN: ${{ inputs.toolchain || 'clang' }}
 
     steps:
+      - name: Check out installer and workflow files
+        uses: actions/checkout@v4
+
       - name: Install MinGW-w64 and GNU Make
         uses: msys2/setup-msys2@v2
         with:
