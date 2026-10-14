@@ -34,7 +34,7 @@ WizardStyle=modern
 
 [Types]
 Name: "typical"; Description: "Typical installation"
-Name: "full"; Description: "All plugin formats"; Flags: isfull
+Name: "full"; Description: "All plugin formats"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Languages]
