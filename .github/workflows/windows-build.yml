@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: blacksmith-2vcpu-windows-2025
     env:
       LSP_VERSION: ${{ inputs.version || '1.2.35' }}
       TOOLCHAIN: ${{ inputs.toolchain || 'clang' }}
