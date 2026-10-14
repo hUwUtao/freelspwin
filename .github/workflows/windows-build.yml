@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
@@ -24,7 +26,7 @@ jobs:
   build:
     runs-on: blacksmith-2vcpu-windows-2025
     env:
-      LSP_VERSION: ${{ inputs.version || '1.2.35' }}
+      LSP_VERSION: ${{ inputs.version || github.event.release.tag_name || '1.2.35' }}
       TOOLCHAIN: ${{ inputs.toolchain || 'clang' }}
 
     steps:
@@ -41,10 +43,15 @@ jobs:
             mingw-w64-ucrt-x86_64-binutils
 
       - name: Download source release
+        id: source
         shell: pwsh
         run: |
-          $archive = "lsp-plugins-src-$env:LSP_VERSION.tar.gz"
-          $url = "https://github.com/sadko4u/lsp-plugins/releases/download/$env:LSP_VERSION/$archive"
+          $version = $env:LSP_VERSION -replace '^v', ''
+          $env:LSP_VERSION = $version
+          "LSP_VERSION=$version" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
+          $archive = "lsp-plugins-src-$version.tar.gz"
+          $url = "https://github.com/sadko4u/lsp-plugins/releases/download/$version/$archive"
           Invoke-WebRequest -Uri $url -OutFile $archive
           tar -xzf $archive
           $makefile = Get-ChildItem -Recurse -Filter Makefile | Where-Object { Test-Path (Join-Path $_.DirectoryName 'project.mk') } | Select-Object -First 1
@@ -57,9 +64,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .ccache
-          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ steps.source.outputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-
+            ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ steps.source.outputs.version }}-
 
       - name: Configure, build, and install
         shell: msys2 {0}
@@ -84,12 +91,12 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .ccache
-          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ env.LSP_VERSION }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ccache-${{ runner.os }}-${{ runner.arch }}-${{ env.TOOLCHAIN }}-${{ steps.source.outputs.version }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload Windows plugin bundle
         uses: actions/upload-artifact@v4
         with:
-          name: lsp-plugins-windows-x86_64-${{ env.LSP_VERSION }}-${{ env.TOOLCHAIN }}
+          name: lsp-plugins-windows-x86_64-${{ steps.source.outputs.version }}-${{ env.TOOLCHAIN }}
           path: ${{ env.LSP_SOURCE_DIR }}/INSTALL/
           if-no-files-found: error
           compression-level: 9
