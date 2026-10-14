@@ -41,6 +41,7 @@ jobs:
             ccache
             ${{ inputs.toolchain == 'gcc' && 'mingw-w64-ucrt-x86_64-gcc' || 'mingw-w64-ucrt-x86_64-clang' }}
             mingw-w64-ucrt-x86_64-binutils
+            mingw-w64-ucrt-x86_64-winpthreads
 
       - name: Download source release
         id: source
@@ -84,6 +85,7 @@ jobs:
           make config FEATURES="clap ladspa lv2 vst2 vst3 ui" CC="$CC" CXX="$CXX"
           make -j2 CC="$CC" CXX="$CXX"
           make install
+          cp /ucrt64/bin/libwinpthread-1.dll INSTALL/
           ccache --show-stats
 
       - name: Save ccache
