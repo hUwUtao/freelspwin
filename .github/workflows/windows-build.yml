@@ -65,8 +65,9 @@ jobs:
       - name: Configure, build, and install
         shell: msys2 {0}
         env:
-          CC: ${{ inputs.toolchain == 'gcc' && 'ccache gcc' || 'ccache clang' }}
-          CXX: ${{ inputs.toolchain == 'gcc' && 'ccache g++' || 'ccache clang++' }}
+          # GNU ld's partial links do not handle Clang address-significance sections.
+          CC: ${{ inputs.toolchain == 'gcc' && 'ccache gcc' || 'ccache clang -fno-addrsig' }}
+          CXX: ${{ inputs.toolchain == 'gcc' && 'ccache g++' || 'ccache clang++ -fno-addrsig' }}
           HOST_CC: ccache gcc
           HOST_CXX: ccache g++
         run: |
